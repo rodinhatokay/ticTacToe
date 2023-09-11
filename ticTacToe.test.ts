@@ -1,5 +1,6 @@
 import { Errors } from "./errors";
-import { CellType, TicTacToe } from "./ticTacToe";
+import { TicTacToe } from "./ticTacToe";
+import { PlayerType } from "./types";
 
 describe("tic tac toe game:", () => {
   let ticTacToe: TicTacToe;
@@ -17,32 +18,32 @@ describe("tic tac toe game:", () => {
   });
 
   describe("providing custom game board to constrcutor", () => {
-    it("should create empty game board by providing to consturctor", () => {
+    it("should create custom game board", () => {
       const ticTacToe = new TicTacToe([
-        ["", "", ""],
-        ["", "", ""],
+        [PlayerType.X, "", ""],
+        ["", PlayerType.O, ""],
         ["", "", ""],
       ]);
       expect(ticTacToe.gameBoard).toEqual([
-        ["", "", ""],
-        ["", "", ""],
+        [PlayerType.X, "", ""],
+        ["", PlayerType.O, ""],
         ["", "", ""],
       ]);
     });
 
-    it("it should select the correct players turn by given custom game board", () => {
+    it("should select PlayerType.O as the second player by initalizing with custom board", () => {
       const ticTacToe = new TicTacToe([
-        ["X", "", ""],
+        [PlayerType.X, "", ""],
         ["", "", ""],
         ["", "", ""],
       ]);
-      expect(ticTacToe.curentPlayer).toEqual("O");
+      expect(ticTacToe.curentPlayer).toEqual(PlayerType.O);
     });
 
-    it("checks if game board providied is valid", () => {
+    it("throws if provided board is invalid", () => {
       expect(() => {
         const ticTacToe = new TicTacToe([
-          ["X", "X", ""],
+          [PlayerType.X, PlayerType.X, ""],
           ["", "", ""],
           ["", "", ""],
         ]);
@@ -50,8 +51,8 @@ describe("tic tac toe game:", () => {
 
       expect(() => {
         const ticTacToe = new TicTacToe([
-          ["X", "O", "X"],
-          ["X", "", ""],
+          [PlayerType.X, PlayerType.O, PlayerType.X],
+          [PlayerType.X, "", ""],
           ["", "", ""],
         ]);
       }).toThrow(Errors.invalidGameBoardInitalProvided);
@@ -59,51 +60,51 @@ describe("tic tac toe game:", () => {
 
     it("should set winner if provided game ended", () => {
       const ticTacToe = new TicTacToe([
-        ["X", "O", ""],
-        ["", "X", "O"],
-        ["", "", "X"],
+        [PlayerType.X, PlayerType.O, ""],
+        ["", PlayerType.X, PlayerType.O],
+        ["", "", PlayerType.X],
       ]);
-      expect(ticTacToe.getWinner()).toEqual("X");
+      expect(ticTacToe.getWinner()).toEqual(PlayerType.X);
     });
   });
 
   describe("validations on player moves", () => {
     it("player can make a move", () => {
-      const player = "X";
+      const player = PlayerType.X;
       ticTacToe.makeMove(0, 0, player);
       expect(ticTacToe.gameBoard[0][0]).toEqual(player);
     });
 
-    it("player cant make a move on same place", () => {
-      ticTacToe.makeMove(0, 0, "X");
+    it("throws error when moving to a taken spot", () => {
+      ticTacToe.makeMove(0, 0, PlayerType.X);
       expect(() => {
-        ticTacToe.makeMove(0, 0, "X");
+        ticTacToe.makeMove(0, 0, PlayerType.X);
       }).toThrow(Errors.spotAlreadyTaken);
     });
 
     it("should throw error when trying to play 2 or more rounds as same player", () => {
-      ticTacToe.makeMove(0, 0, "X");
+      ticTacToe.makeMove(0, 0, PlayerType.X);
       expect(() => {
-        ticTacToe.makeMove(0, 1, "X");
+        ticTacToe.makeMove(0, 1, PlayerType.X);
       }).toThrow(Errors.otherPlayersTurnToMakeMove);
     });
 
     it("player can't make a move outside the game board", () => {
       // each move can be refactored and called to function something like: makeMoveUpperBandRow etc..
       expect(() => {
-        ticTacToe.makeMove(-1, 2, "X"); // row upper band
+        ticTacToe.makeMove(-1, 2, PlayerType.X); // row upper band
       }).toThrow(Errors.invalidMoveCoordinates);
 
       expect(() => {
-        ticTacToe.makeMove(4, 2, "O"); // row lower band
+        ticTacToe.makeMove(4, 2, PlayerType.O); // row lower band
       }).toThrow(Errors.invalidMoveCoordinates);
 
       expect(() => {
-        ticTacToe.makeMove(0, 5, "X"); // col upper band
+        ticTacToe.makeMove(0, 5, PlayerType.X); // col upper band
       }).toThrow(Errors.invalidMoveCoordinates);
 
       expect(() => {
-        ticTacToe.makeMove(0, -5, "O"); // col lower band
+        ticTacToe.makeMove(0, -5, PlayerType.O); // col lower band
       }).toThrow(Errors.invalidMoveCoordinates);
     });
   });
@@ -115,7 +116,7 @@ describe("tic tac toe game:", () => {
   });
 
   describe("winning direction possiblites", () => {
-    let firstPlayer: CellType;
+    let firstPlayer: PlayerType;
 
     beforeEach(() => {
       firstPlayer = ticTacToe.curentPlayer;
@@ -123,44 +124,44 @@ describe("tic tac toe game:", () => {
 
     it("first player wins the game diagonlly", () => {
       ticTacToe = new TicTacToe([
-        ["X", "O", ""],
-        ["O", "X", ""],
+        [PlayerType.X, PlayerType.O, ""],
+        [PlayerType.O, PlayerType.X, ""],
         ["", "", ""],
       ]);
-      ticTacToe.makeMove(2, 2, "X");
+      ticTacToe.makeMove(2, 2, PlayerType.X);
       expect(ticTacToe.getWinner()).toEqual(firstPlayer);
     });
 
     it("first player wins the game by row", () => {
       ticTacToe = new TicTacToe([
-        ["X", "X", ""],
-        ["O", "O", ""],
+        [PlayerType.X, PlayerType.X, ""],
+        [PlayerType.O, PlayerType.O, ""],
         ["", "", ""],
       ]);
-      ticTacToe.makeMove(0, 2, "X");
+      ticTacToe.makeMove(0, 2, PlayerType.X);
       expect(ticTacToe.getWinner()).toEqual(firstPlayer);
     });
 
     it("first player wins the game by col", () => {
       ticTacToe = new TicTacToe([
-        ["X", "O", ""],
-        ["X", "O", ""],
+        [PlayerType.X, PlayerType.O, ""],
+        [PlayerType.X, PlayerType.O, ""],
         ["", "", ""],
       ]);
 
-      ticTacToe.makeMove(2, 0, "X"); // first player
+      ticTacToe.makeMove(2, 0, PlayerType.X); // first player
       expect(ticTacToe.getWinner()).toEqual(firstPlayer);
     });
   });
 
   const createDrawGame = () => {
     const ticTacToe = new TicTacToe([
-      ["X", "O", "X"],
-      ["X", "O", "O"],
-      ["O", "X", ""],
+      [PlayerType.X, PlayerType.O, PlayerType.X],
+      [PlayerType.X, PlayerType.O, PlayerType.O],
+      [PlayerType.O, PlayerType.X, ""],
     ]);
 
-    ticTacToe.makeMove(2, 2, "X");
+    ticTacToe.makeMove(2, 2, PlayerType.X);
     return ticTacToe;
   };
 
@@ -171,13 +172,13 @@ describe("tic tac toe game:", () => {
 
   it("cant make moves after someone wins", () => {
     const ticTacToe = new TicTacToe([
-      ["X", "O", "O"],
-      ["", "X", ""],
+      [PlayerType.X, PlayerType.O, PlayerType.O],
+      ["", PlayerType.X, ""],
       ["", "", ""],
     ]);
-    ticTacToe.makeMove(2, 2, "X");
+    ticTacToe.makeMove(2, 2, PlayerType.X);
     expect(() => {
-      ticTacToe.makeMove(1, 2, "O");
+      ticTacToe.makeMove(1, 2, PlayerType.O);
     }).toThrow(Errors.cantMakeMovesAfterGameEnd);
   });
 });

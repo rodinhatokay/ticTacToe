@@ -1,14 +1,11 @@
 import { Errors } from "./errors";
-
-export type CellType = "" | "X" | "O";
-
-export type GameBoard = Array<Array<CellType>>;
+import { CellType, GameBoard, MAX_MOVES_IN_GAME, PlayerType } from "./types";
 
 export class TicTacToe {
   private winner: CellType | "None" = "";
   private countMoves = 0;
   public gameBoard: GameBoard;
-  public curentPlayer: CellType = "X";
+  public curentPlayer: PlayerType = PlayerType.X;
 
   constructor(gameBoard?: GameBoard) {
     this.gameBoard = gameBoard || [
@@ -37,27 +34,28 @@ export class TicTacToe {
       }
     }
     if (
-      !this.isValidGameBoardProvided(
+      !this.isValidGameBoardProvided({
         countPlayerXMoves,
         countPlayerYMoves,
-        this.countMoves
-      )
+        countAllMoves: this.countMoves,
+      })
     ) {
       throw new Error(Errors.invalidGameBoardInitalProvided);
     }
-    this.curentPlayer = this.countMoves % 2 === 0 ? "X" : "O";
+    this.curentPlayer = this.countMoves % 2 === 0 ? PlayerType.X : PlayerType.O;
   }
 
-  private isValidGameBoardProvided(
-    countPlayerXMoves: number,
-    countPlayersYMoves: number,
-    countAllMoves: number
-  ) {
+  private isValidGameBoardProvided(args: {
+    countPlayerXMoves: number;
+    countPlayerYMoves: number;
+    countAllMoves: number;
+  }) {
+    const { countAllMoves, countPlayerXMoves, countPlayerYMoves } = args;
     if (countAllMoves % 2 === 0) {
       //they should have the same amount of moves
-      return countPlayerXMoves === countPlayersYMoves;
+      return countPlayerXMoves === countPlayerYMoves;
     } else {
-      return countPlayerXMoves - 1 === countPlayersYMoves;
+      return countPlayerXMoves - 1 === countPlayerYMoves;
     }
   }
 
@@ -65,39 +63,29 @@ export class TicTacToe {
     return this.winner;
   }
 
-  private validateMove(
-    row: number,
-    col: number,
-    player: CellType
-  ): string | null {
+  private validateMove(row: number, col: number, player: CellType) {
     if (!this.checkIfValidCoordinates(row, col)) {
-      return Errors.invalidMoveCoordinates;
+      throw Error(Errors.invalidMoveCoordinates);
     }
 
     if (!this.isCellEmpty(row, col)) {
-      return Errors.spotAlreadyTaken;
+      throw Error(Errors.spotAlreadyTaken);
     }
 
     if (this.curentPlayer !== player) {
-      return Errors.otherPlayersTurnToMakeMove;
+      throw Error(Errors.otherPlayersTurnToMakeMove);
     }
 
     if (this.winner) {
-      return Errors.cantMakeMovesAfterGameEnd;
+      throw Error(Errors.cantMakeMovesAfterGameEnd);
     }
-
-    return null;
   }
 
   public makeMove(row: number, col: number, player: CellType) {
-    const validationError = this.validateMove(row, col, player);
-
-    if (validationError) {
-      throw new Error(validationError);
-    }
+    this.validateMove(row, col, player);
 
     this.gameBoard[row][col] = player;
-    this.curentPlayer = player === "X" ? "O" : "X";
+    this.curentPlayer = player === PlayerType.X ? PlayerType.O : PlayerType.X;
     this.countMoves++;
     this.calculateWinner();
   }
@@ -131,12 +119,9 @@ export class TicTacToe {
   private calculateWinner() {
     // Check rows, columns, and diagonals for a win
     for (let i = 0; i < 3; i++) {
-      // Check rows
       if (this.checkRowForWinner(i)) {
         this.winner = this.gameBoard[i][0];
       }
-
-      // Check columns
       if (this.checkColForWinner(i)) {
         this.winner = this.gameBoard[0][i];
       }
@@ -146,7 +131,7 @@ export class TicTacToe {
       this.winner = this.gameBoard[1][1];
     }
 
-    if (this.countMoves === 9 && !this.winner) {
+    if (this.countMoves === MAX_MOVES_IN_GAME && !this.winner) {
       this.winner = "None";
     }
   }
