@@ -1,88 +1,139 @@
 import { Errors } from "./errors";
-
-export type CellType = "" | "X" | "O";
-
-export type GameBoard = Array<Array<CellType>>;
+import { CellType, GameBoard, MAX_MOVES_IN_GAME, PlayerType } from "./types";
 
 export class TicTacToe {
-  private gameBoard: GameBoard = [
-    ["", "", ""],
-    ["", "", ""],
-    ["", "", ""],
-  ];
-  private curentPlayer: CellType = "X";
   private winner: CellType | "None" = "";
   private countMoves = 0;
+  public gameBoard: GameBoard;
+  public curentPlayer: PlayerType = PlayerType.X;
 
-  getWinner() {
+  constructor(gameBoard?: GameBoard) {
+    this.gameBoard = gameBoard || [
+      ["", "", ""],
+      ["", "", ""],
+      ["", "", ""],
+    ];
+    if (gameBoard) {
+      this.setCurrentPlayerByGameBoard(gameBoard);
+      this.calculateWinner();
+    }
+  }
+
+  private setCurrentPlayerByGameBoard(gameBoard: GameBoard) {
+    let countPlayerXMoves = 0;
+    let countPlayerYMoves = 0;
+    for (let row = 0; row < gameBoard.length; row++) {
+      for (let col = 0; col < gameBoard[row].length; col++) {
+        if (gameBoard[row][col]) {
+          this.countMoves++;
+
+          gameBoard[row][col] === "X"
+            ? countPlayerXMoves++
+            : countPlayerYMoves++;
+        }
+      }
+    }
+    if (
+      !this.isValidGameBoardProvided({
+        countPlayerXMoves,
+        countPlayerYMoves,
+        countAllMoves: this.countMoves,
+      })
+    ) {
+      throw new Error(Errors.invalidGameBoardInitalProvided);
+    }
+    this.curentPlayer = this.countMoves % 2 === 0 ? PlayerType.X : PlayerType.O;
+  }
+
+  private isValidGameBoardProvided(args: {
+    countPlayerXMoves: number;
+    countPlayerYMoves: number;
+    countAllMoves: number;
+  }) {
+    const { countAllMoves, countPlayerXMoves, countPlayerYMoves } = args;
+    if (countAllMoves % 2 === 0) {
+      //they should have the same amount of moves
+      return countPlayerXMoves === countPlayerYMoves;
+    } else {
+      return countPlayerXMoves - 1 === countPlayerYMoves;
+    }
+  }
+
+  public getWinner() {
     return this.winner;
   }
 
-  makeMove(row: number, col: number) {
+  private validateMove(row: number, col: number, player: CellType) {
     if (!this.checkIfValidCoordinates(row, col)) {
-      throw new Error(Errors.invalidMoveCoordinates);
+      throw Error(Errors.invalidMoveCoordinates);
     }
 
     if (!this.isCellEmpty(row, col)) {
-      throw new Error(Errors.spotAlreadyTaken);
+      throw Error(Errors.spotAlreadyTaken);
     }
+
+    if (this.curentPlayer !== player) {
+      throw Error(Errors.otherPlayersTurnToMakeMove);
+    }
+
     if (this.winner) {
-      throw new Error(Errors.cantMakeMovesAfterGameEnd);
-    }
-    this.gameBoard[row][col] = this.curentPlayer;
-    this.curentPlayer = this.curentPlayer === "X" ? "O" : "X";
-    this.winner = this.checkIfThereIsWinner();
-    this.countMoves++;
-    if (this.countMoves === 9 && !this.winner) {
-      this.winner = "None";
+      throw Error(Errors.cantMakeMovesAfterGameEnd);
     }
   }
 
-  checkIfThereIsWinner(): CellType {
+  public makeMove(row: number, col: number, player: CellType) {
+    this.validateMove(row, col, player);
+
+    this.gameBoard[row][col] = player;
+    this.curentPlayer = player === PlayerType.X ? PlayerType.O : PlayerType.X;
+    this.countMoves++;
+    this.calculateWinner();
+  }
+
+  private checkRowForWinner(row: number) {
+    return (
+      this.gameBoard[row][0] !== "" &&
+      this.gameBoard[row][0] === this.gameBoard[row][1] &&
+      this.gameBoard[row][0] === this.gameBoard[row][2]
+    );
+  }
+  private checkColForWinner(col: number) {
+    return (
+      this.gameBoard[0][col] !== "" &&
+      this.gameBoard[0][col] === this.gameBoard[1][col] &&
+      this.gameBoard[0][col] === this.gameBoard[2][col]
+    );
+  }
+
+  private checkDiaonalWinner() {
+    return (
+      (this.gameBoard[0][0] !== "" &&
+        this.gameBoard[0][0] === this.gameBoard[1][1] &&
+        this.gameBoard[0][0] === this.gameBoard[2][2]) ||
+      (this.gameBoard[0][2] !== "" &&
+        this.gameBoard[0][2] === this.gameBoard[1][1] &&
+        this.gameBoard[0][2] === this.gameBoard[2][0])
+    );
+  }
+
+  private calculateWinner() {
     // Check rows, columns, and diagonals for a win
     for (let i = 0; i < 3; i++) {
-      // Check rows
-      if (
-        this.gameBoard[i][0] === this.gameBoard[i][1] &&
-        this.gameBoard[i][0] === this.gameBoard[i][2] &&
-        this.gameBoard[i][0] !== ""
-      ) {
-        return this.gameBoard[i][0];
+      if (this.checkRowForWinner(i)) {
+        this.winner = this.gameBoard[i][0];
       }
-
-      // Check columns
-      if (
-        this.gameBoard[0][i] === this.gameBoard[1][i] &&
-        this.gameBoard[0][i] === this.gameBoard[2][i] &&
-        this.gameBoard[0][i] !== ""
-      ) {
-        return this.gameBoard[0][i];
+      if (this.checkColForWinner(i)) {
+        this.winner = this.gameBoard[0][i];
       }
     }
 
-    // Check main diagonal
-    if (
-      this.gameBoard[0][0] === this.gameBoard[1][1] &&
-      this.gameBoard[0][0] === this.gameBoard[2][2] &&
-      this.gameBoard[0][0] !== ""
-    ) {
-      return this.gameBoard[0][0];
+    if (this.checkDiaonalWinner()) {
+      this.winner = this.gameBoard[1][1];
     }
 
-    // Check secondary diagonal
-    if (
-      this.gameBoard[0][2] === this.gameBoard[1][1] &&
-      this.gameBoard[0][2] === this.gameBoard[2][0] &&
-      this.gameBoard[0][2] !== ""
-    ) {
-      return this.gameBoard[0][2];
+    if (this.countMoves === MAX_MOVES_IN_GAME && !this.winner) {
+      this.winner = "None";
     }
-
-    return "";
-  }
-
-  getCurrentPlayerTurn() {
-    return this.curentPlayer;
   }
 
   private checkIfValidCoordinates(row: number, col: number): boolean {
@@ -91,9 +142,5 @@ export class TicTacToe {
 
   private isCellEmpty(row: number, col: number) {
     return this.gameBoard[row][col] === "";
-  }
-
-  getBoardGame(): GameBoard {
-    return this.gameBoard;
   }
 }
